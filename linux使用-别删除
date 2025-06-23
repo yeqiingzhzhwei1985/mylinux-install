@@ -1,0 +1,87 @@
+##############################################
+##############################################
+###################################天气查询-命令行
+curl zh.wttr.in/kunming
+curl zh.wttr.in/kunming?format=<1-4>
+curl zh.wttr.in/kunming?1
+
+
+###################################
+###################################
+###################################
+两种启动管理软件:systemd-boot : grub2 
+bootctl:systemd-boot
+grub:grub2
+
+#######################
+#######################
+##################fedora
+fedora安装需要安装的基本软件:
+gnome-tweaks ###gnome桌面的插件
+gnome-Weather ###天气
+gnome-clocks ##时钟
+geany ###编成软件
+thonny ###python软件
+code  ##vscode
+shotcut ##视频处理软件
+shotwell ###图片管理软件
+gimp ###图片处理软件
+gnome-Maps ##地图
+ncdu ###磁盘分析软件
+vim
+nano
+nload ###网速测试工具
+networkmanger  ###wifi管理工具
+dhcpcd   ###自动获usb等硬件ip工具
+htop
+gnome-disk-utility  ###硬盘管理工具
+Baobab ###磁盘分析工具
+gcc 
+g++
+zig
+python
+gfortran
+go
+rust
+totem ###视频播放器-简洁明亮
+snapshot ###gnome桌面的摄像头
+sublime-text:{
+sudo rpm -v --import https://download.sublimetext.com/sublimehq-rpm-pub.gpg
+sudo dnf config-manager --add-repo https://download.sublimetext.com/rpm/stable/x86_64/sublime-text.repo
+sudo dnf install sublime-text
+}
+
+firefox:{
+下载:https://www.firefox.com.cn
+解压
+
+配置桌面
+vim ~/.local/share/applications/firefox.desktop
+
+输入:
+
+mkdir -p ~/.local/share/applications/
+cat << EOF > ~/.local/share/applications/firefox.desktop
+[Desktop Entry]
+Name=Firefox
+Exec=/opt/firefox/firefox
+Icon=/opt/firefox/browser/chrome/icons/default/default128.png
+Terminal=false
+Type=Application
+Categories=Network;WebBrowser;
+EOF
+
+执行可执行权限:
+chmod +x ~/.local/share/applications/firefox.desktop
+
+更新系统快捷方式缓存
+update-desktop-database ~/.local/share/applications/
+
+将 Firefox 路径加入 PATH
+echo 'export PATH="$PATH:/opt/firefox"' >> ~/.bashrc
+source ~/.bashrc
+}
+
+######################################################
+######################################################
+######################################################

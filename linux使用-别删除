@@ -46,7 +46,12 @@ zig
 python
 gfortran
 go
-rust
+rust   ###curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+uv   ### curl -LsSf https://astral.sh/uv/install.sh | sh
+pyenv   ### curl https://pyenv.run | bash
+rustpython  ### cargo install rustpython 
+pyrun
+nvm
 totem ###视频播放器-简洁明亮
 snapshot ###gnome桌面的摄像头
 sublime-text:{

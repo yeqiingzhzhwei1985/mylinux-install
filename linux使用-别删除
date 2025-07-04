@@ -141,7 +141,13 @@ git push origin 分子名
 ####例如
 git push origin main
 ###如果本地分支已关联远程分支（通过 git branch --set-upstream-to），可直接：
+####本地第一次推送本地分支,使用-u或者--set-upstream
+git push -u origin 分子名
+或者
+git push --set-upstream origin 分子名
+###关联以后就可以直接:
 git push
+
 
 
 ########################################################

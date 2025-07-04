@@ -127,6 +127,15 @@ ssh -T git@github.com
 
 ###修改远程仓库地址为 SSH
 git remote set-url origin git@github.com:yeqiingzhzhwei1985/mylinux-install.git
+####验证
+git remote -v 
+# 应显示：
+# origin  git@github.com:your_username/mylinux-install.git (fetch)
+# origin  git@github.com:your_username/mylinux-install.git (push)
+# 测试连接
+# 应显示：
+# origin  git@github.com:your_username/mylinux-install.git (fetch)
+# origin  git@github.com:your_username/mylinux-install.git (push)
 
 ###修改本地代码
 

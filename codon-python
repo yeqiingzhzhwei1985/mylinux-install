@@ -5,5 +5,5 @@ codon是一个可以把python编译成机器码的工具,可以提高python的�
 设置环境变量:
 
 
-echo 'export 'PATH="$PATH:/home/wei/.codon/bin"' >> ~/.bashrc
+echo 'export PATH="$PATH:/home/wei/.codon/bin"' >> ~/.bashrc
 source ~/.bashrc

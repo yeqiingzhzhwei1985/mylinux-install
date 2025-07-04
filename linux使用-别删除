@@ -51,7 +51,13 @@ uv   ### curl -LsSf https://astral.sh/uv/install.sh | sh
 pyenv   ### curl https://pyenv.run | bash
 rustpython  ### cargo install rustpython 
 pyrun
-nvm
+nvm  ### curl -fsSL https://pyenv.run | bash
+###添加环境变量到~/.bashrc
+      ```bash
+      echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
+      echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
+      echo 'eval "$(pyenv init - bash)"' >> ~/.bashrc
+      ```
 totem ###视频播放器-简洁明亮
 snapshot ###gnome桌面的摄像头
 sublime-text:{

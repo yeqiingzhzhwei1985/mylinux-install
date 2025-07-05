@@ -51,7 +51,7 @@ uv   ### curl -LsSf https://astral.sh/uv/install.sh | sh
 pyenv   ### curl https://pyenv.run | bash
 rustpython  ### cargo install rustpython 
 pyrun
-nvm  ### curl -fsSL https://pyenv.run | bash
+pyenv  ### curl -fsSL https://pyenv.run | bash
 ###添加环境变量到~/.bashrc
       ```bash
       echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc

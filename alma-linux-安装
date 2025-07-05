@@ -1,0 +1,15 @@
+alma-linux 安装有一些心得:
+
+almalinux和rockylinux仓库中似乎对xorg框架和i3桌面不支持,没有安装的包
+
+只能通过安装wayland来做桌面,或者直接使用"Workstation"  "Server with GUI"
+或者采用最原始的方式,也是最精简的安装:
+sudo dnf install xorg-x11-server-Xwaylan gdm  ##采用xwayland方式和gdm启动器管理桌面,但是安装了,什么软件都没有,最基本的终端都没有,完全需要自己设置.
+sudo dnf install NetworkManager dhcpcd 安装网络管理工具
+sudo dnfinstall vim wget curl ncdu nload geany sublime-text mpv btop htop uv gedit xterm gnome-clocks gnome-calculator baobab gnome-disk-utility gnome-bluetooth xdg-open
+sudo dnf install ibus ibus-libpinyin ### ibus拼音输入法
+
+##########设置默认启动桌面环境
+sudo systemctl enable gdm
+sudo systemctl set-default graphical.target
+

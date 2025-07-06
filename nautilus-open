@@ -1,0 +1,21 @@
+设置nautinal打开终端:
+如果自己不带,比如我在almalinux中安装,不带
+安装扩展插件nautilus-python
+sudo dnf install nautilus-python
+sudo apt install python3-nautilus
+如果在仓库中找不到就源代码编译安装
+git clone https://gitlab.gnome.org/GNOME/nautilus-python.git
+复制open-terminal.py到:
+mkdir -p ~/.local/share/nautilus-python/extensions/  # 用户级扩展
+sudo mkdir -p /usr/share/nautilus-python/extensions/     # 系统级扩展
+
+cd nautilus-terminal/examples
+修改文件open-terminal.py里面的默认终端改成你想使用的终端,比如terminator\gnome-terminal\
+
+cp open-terminal.py ~/.local/share/nautilus-python/extensions/  # 用户级扩展
+sudo cp open-terminal /usr/share/nautilus-python/extensions/     # 系统级扩展
+重启nautilus
+nautilus -q
+或者
+nautilus &
+系统级别和用户级别配置,只需要一个就可以了

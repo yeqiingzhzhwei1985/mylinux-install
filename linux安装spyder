@@ -1,0 +1,14 @@
+pip3 install spyder
+
+如果安装完成没有桌面图标:
+nano ~/.local/share/applications/spyder.desktop
+
+[Desktop Entry]
+Name=Spyder
+Comment=Scientific Python Development Environment
+Exec=/usr/local/bin/spyder3  # 或使用绝对路径：$(which spyder)
+Icon=spyder
+Terminal=false
+Type=Application
+Categories=Development;IDE;
+StartupWMClass=Spyder

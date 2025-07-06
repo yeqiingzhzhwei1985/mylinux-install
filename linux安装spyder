@@ -6,8 +6,8 @@ nano ~/.local/share/applications/spyder.desktop
 [Desktop Entry]
 Name=Spyder
 Comment=Scientific Python Development Environment
-Exec=/usr/local/bin/spyder3  # 或使用绝对路径：$(which spyder)
-Icon=spyder
+Exec=/home/wei/.pyenv/shims/spyder  # 或使用绝对路径：$(which spyder)
+Icon=/home/wei/.local/share/applications/spyder.jpg
 Terminal=false
 Type=Application
 Categories=Development;IDE;

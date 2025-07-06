@@ -6,7 +6,7 @@ almalinux和rockylinux仓库中似乎对xorg框架和i3桌面不支持,没有安
 或者采用最原始的方式,也是最精简的安装:
 sudo dnf install xorg-x11-server-Xwaylan gdm  ##采用xwayland方式和gdm启动器管理桌面,但是安装了,什么软件都没有,最基本的终端都没有,完全需要自己设置.
 sudo dnf install NetworkManager dhcpcd 安装网络管理工具
-sudo dnfinstall vim wget curl ncdu nload geany sublime-text mpv btop htop uv gedit xterm gnome-clocks gnome-calculator baobab gnome-disk-utility gnome-bluetooth xdg-open gnome-tweaks snapshot firefox git langpacks-zh_CN gnome-common 
+sudo dnfinstall vim wget curl ncdu nload geany sublime-text mpv btop htop uv gedit xterm gnome-clocks gnome-calculator baobab gnome-disk-utility gnome-bluetooth xdg-open gnome-tweaks snapshot firefox git langpacks-zh_CN gnome-common nautilus
 sudo dnf install ibus ibus-libpinyin ### ibus拼音输入法
 sudo dnf install python3 python3-pip go gcc g++ gfortran rustc cargo java-latest-openjdk-devel lua 
 ####仓库里面没有,需要单独安装的:

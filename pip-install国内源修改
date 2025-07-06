@@ -1,0 +1,5 @@
+# 创建或修改 pip 配置文件
+mkdir -p ~/.pip
+echo "[global]
+index-url = https://pypi.tuna.tsinghua.edu.cn/simple
+trusted-host = pypi.tuna.tsinghua.edu.cn" > ~/.pip/pip.conf

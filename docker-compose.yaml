@@ -1,3 +1,5 @@
+https://www.home-assistant.io/installation/linux
+
 #因为使用docker命令安装homeassistant管理比较复杂,因此推荐采用这个yaml脚本来实现.但是前提是安装了docker和docker-compose插件
 #创建这个脚本 docker-compose.yalm ,并把它放在自己设置的homeassistant路径下,比如我/home/wei/.local/HomeAssistant/
 #脚本内容如下:

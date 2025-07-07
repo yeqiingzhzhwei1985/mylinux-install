@@ -1,0 +1,89 @@
+#########################################
+debian安装docker
+########################################
+1 安装依赖工具
+
+sudo apt update
+sudo apt install -y ca-certificates curl gnupg
+
+2 添加 Docker官方GPG密匙
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+3 设置 Docker 仓库
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+4 安装 Docker Engine
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+5验证安装
+sudo docker version
+
+6 （可选）配置非 root 用户运行 Docker
+sudo usermod -aG docker $USER
+newgrp docker  # 刷新用户组（或重新登录）
+
+7 （可选）设置 Docker 开机自启
+sudo systemctl enable docker
+
+8 禁用 docker开机启动和手动启动Docker
+# 禁用 Docker 开机自启
+sudo systemctl disable docker
+
+# 需要时手动启动 Docker
+sudo systemctl start docker
+
+##############################################
+############################################
+如果只是想开机手动运行homeassistant:
+# 禁用 Docker 开机自启
+sudo systemctl disable docker
+# 需要时手动启动 Docker
+sudo systemctl start docker
+############################################
+docker start homeassistant  # 按需启动容器
+docker stop homeassistant   # 不用时关闭
+脚本自动化
+编写脚本在登录时启动特定容器（如放入 ~/.bashrc）：
+if [ "$(docker ps -q -f name=homeassistant)" = "" ]; then
+    docker start homeassistant
+fi
+#########################################
+##########################################
+
+#########################################
+#########################################
+安装docker compose 
+debian ubunutu
+sudo  apt isntall docker-compose-plugin
+
+fedora rockylinux   almalinux 
+sudo yum install docker-compose-plugin
+验证安装和版本
+docker compose version
+升级
+sudo apt-get update
+sudo apt-get install docker-compose-plugin
+
+sudo yum update
+sudo yum install docker-compose-plugin
+
+########################################
+安装docker compose CLIplugin
+1下载和安装docker compose cli插件
+DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
+mkdir -p $DOCKER_CONFIG/cli-plugins
+curl -SL https://github.com/docker/compose/releases/download/v2.38.1/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
+2修改程序可执行权限
+chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
+sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose  ###如果是系统安装
+3测试安装结果
+docker compose version
+############################################
+原始安装网站
+https://docs.docker.com/compose/install/linux/#install-using-the-repository

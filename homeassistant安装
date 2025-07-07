@@ -1,0 +1,43 @@
+Home Assistant OS 安装///基于debian或者ubuntu系统,其他系统官方不推荐别的linux.还有树莓派也可以
+
+命令行安装:   网速可能很慢,需要耐心
+#############################################
+官方推荐安装:
+##########################################
+docker run -d \
+  --name homeassistant \
+  --privileged \
+  --restart=unless-stopped \
+  -e TZ=MY_TIME_ZONE \
+  -v /PATH_TO_YOUR_CONFIG:/config \
+  -v /run/dbus:/run/dbus:ro \
+  --network=host \
+  ghcr.io/home-assistant/home-assistant:stable
+################################################
+修改后的安装
+################################################
+docker run -d \
+  --name homeassistant \
+  --restart=unless-stopped \
+  -e TZ=Asia/Shanghai \      ###设置为上海区时
+  -v /home/wei/.local/HomeAssistant/haos_config:/config \  ##设置配置路径,可以通过自己修改称自己的路径  mkdir -p /home/wei/.local/HomeAssistant/haos_config
+  -v /run/dbus:/run/dbus:ro \
+  --network=host
+  ghcr.io/home-assistant/home-assistant:stable   ###镜像拉起网站 
+############################################################
+特别修改,按使用的设备要求
+##########################################################
+docker run -d \
+  --name homeassistant \
+  --restart=unless-stopped \
+  -e TZ=Asia/Shanghai \      ###设置为上海区时
+  -v /home/wei/.local/HomeAssistant/haos_config:/config \  ##设置配置路径,可以通过自己修改称自己的路径  mkdir -p /home/wei/.local/HomeAssistant/haos_config
+  -v /run/dbus:/run/dbus:ro \
+  --cap-add=NET_ADMIN \		#允许网络管理( 比如说hostspot 插件)
+  --cap-add=SYS_RAWIO \		#如需直接访问硬件设施(比如 zigbee)
+  --device=/dev/ttyUSB0 \        # 按需修改,映射具体设备
+  --group-add dialout \		#按需添加,
+  --group-add bluetooth \	#按需添加,确保容器内用户可以访问串口设备
+  -p 8123:8123 \		#按需添加,显示映射端口,替代品  --network=host
+  -p 51827:51827/udp \		#按需添加,
+  ghcr.io/home-assistant/home-assistant:stable   ###镜像拉起网站 

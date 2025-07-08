@@ -1,0 +1,10 @@
+NetworkManager-bluetooth.x86_64                      1:1.52.0-1.fc42                      624cbc92582d4ecfae4c58749abde4f8
+blueman.x86_64                                       1:2.4.4-2.fc42                       fedora
+blueman-nautilus.noarch                              1:2.4.4-2.fc42                       fedora
+bluez.x86_64                                         5.83-1.fc42                          updates
+bluez-cups.x86_64                                    5.83-1.fc42                          updates
+bluez-libs.x86_64                                    5.83-1.fc42                          updates
+bluez-obexd.x86_64                                   5.83-1.fc42                          updates
+bluez-tools.x86_64                                   0.2.0-0.27.git20170912.7cb788c.fc42  fedora
+gnome-bluetooth.x86_64                               1:47.1-2.fc42                        624cbc92582d4ecfae4c58749abde4f8
+gnome-bluetooth-libs.x86_64                          1:47.1-2.fc42                        624cbc92582d4ecfae4c58749abde4f8

@@ -3,26 +3,30 @@ https://www.home-assistant.io/installation/linux
 #因为使用docker命令安装homeassistant管理比较复杂,因此推荐采用这个yaml脚本来实现.但是前提是安装了docker和docker-compose插件
 #创建这个脚本 docker-compose.yalm ,并把它放在自己设置的homeassistant路径下,比如我/home/wei/.local/HomeAssistant/
 #运行采用 docker compose up -d  执行这个命令要在compose.yalm文件位置执行.不如你要如此:
-# docker compose -f /path/to/compose.yalm up -d
+# docker compose -f /path/to/compose.yaml up -d
 #脚本内容如下:
+#################################################
+
 services:
   homeassistant:
     container_name: homeassistant
     image: "ghcr.io/home-assistant/home-assistant:stable"
     environment:
-    - TZ=Asia/Shanghai
+      - TZ=Asia/Shanghai
     volumes:
-      - /home/wei/.local/HomeAssistant/ha_config:/config
+
+      - /home/wei/.local/HomeAssistant/haos_config:/config
       - /run/dbus:/run/dbus:ro
     restart: unless-stopped
     privileged: true
-    network_mode: host
-
-
-
-
 
 ##############################################
+mkdir -p  /home/wei/.local/HomeAssistant/haos_config
+cd  /home/wei/.local/HomeAssistant/haos_config
+docker compose up -d
+###############################################
+
+
 docker compose 命令详解
 首次启动项目
 docker compose up -d

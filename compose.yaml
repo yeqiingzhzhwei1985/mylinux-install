@@ -1,94 +1,12 @@
-https://www.home-assistant.io/installation/linux
-
-#因为使用docker命令安装homeassistant管理比较复杂,因此推荐采用这个yaml脚本来实现.但是前提是安装了docker和docker-compose插件
-#创建这个脚本 docker-compose.yalm ,并把它放在自己设置的homeassistant路径下,比如我/home/wei/.local/HomeAssistant/
-#运行采用 docker compose up -d  执行这个命令要在compose.yalm文件位置执行.不如你要如此:
-# docker compose -f /path/to/compose.yalm up -d
-#脚本内容如下:
 services:
   homeassistant:
     container_name: homeassistant
     image: "ghcr.io/home-assistant/home-assistant:stable"
     environment:
-    - TZ=Asia/Shanghai
+      - TZ=Asia/Shanghai
     volumes:
-      - /home/wei/.local/HomeAssistant/ha_config:/config
+      - /home/wei/.local/HomeAssistant/haos_config:/config
       - /run/dbus:/run/dbus:ro
     restart: unless-stopped
     privileged: true
     network_mode: host
-
-
-
-
-
-##############################################
-docker compose 命令详解
-首次启动项目
-docker compose up -d
-更新服务后重启
-docker compose up -d --build
-仅启动部分服务
-docker compose up -d nginx mysql
-查看实时日志
-docker compose logs -f
-检查服务状态
-docker compose ps
-进入容器调试
-docker compose exec app bash
-
-
-docker compose start	启动已存在的容器（不重新创建）	重启之前停止的服务
-docker compose stop	停止运行中的容器（不删除）	临时暂停服务
-docker compose down	停止并删除所有容器、网络、卷（保留镜像）	彻底清理项目环境
-
-多文件合并：支持通过 -f 指定多个文件（按顺序合并）：
-docker compose -f base.yaml -f override.yaml up -d
-
- 检查文件是否被识别
- # 显示最终加载的配置（不实际运行）
-docker compose config
-
-
-文件不在当前目录
-# 错误做法（仍在当前目录查找）：
-cd ~
-docker compose up -d  # 报错，因为 ~ 目录下无 compose 文件
-
-# 正确做法：
-cd /path/to/project
-docker compose up -d
-# 或
-docker compose -f /path/to/project/compose.yaml up -d
-
-文件查找的底层逻辑
-
-工作目录：以运行命令时的当前目录为基准。
-
-递归查找：不会自动向上级目录查找。
-
-多文件合并：支持通过 -f 指定多个文件（按顺序合并）：
-
-docker compose -f base.yaml -f override.yaml up -d
-
-手动指定文件路径
-如果文件不在当前目录或使用自定义名称，需通过 -f 参数显式指定：
-# 指定绝对路径
-docker compose -f /path/to/custom-file.yaml up -d
-
-# 指定相对路径
-docker compose -f ../my-config/compose.prod.yaml up -d
-
-文件查找机制
-当执行 docker compose up -d 时，会按 以下顺序 自动查找配置文件（无需手动指定路径）：
-    当前工作目录下的：
-
-        compose.yaml（最新官方推荐名称）
-
-        compose.yml
-
-        docker-compose.yaml:
-
-        docker-compose.yml（旧版兼容名称）
-
-    若未找到：报错 no configuration file provided

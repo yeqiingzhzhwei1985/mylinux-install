@@ -1,0 +1,57 @@
+参考文档:https://doc.rust-lang.org/rustc/codegen-options/index.html
+RUST有自己的编译参数:
+
+$rustc --print code-models
+Available code models:
+    tiny
+    small
+    kernel
+    medium
+    large
+
+    tiny - Tiny code model.
+    small - Small code model. This is the default model for majority of supported targets.
+    kernel - Kernel code model.
+    medium - Medium code model.
+    large - Large code model.
+许多程序现在使用 Rust 编写，而 Rust 有其自身的优化方式。默认情况下，Rust 在所有的 release 构建中都会启用优化级别 3（除非项目手动修改），因此通常无需额外调整。完整的优化选项（称为 codegen）可以在 Rust 官方文档中查看：Rust 代码生成选项。
+
+最有用的优化是让 Rust 针对你的 CPU 进行编译优化，例如：
+RUSTFLAGS="-C target-cpu=native"
+关键点
+
+    默认优化：Rust 的 release 模式（--release）默认使用 opt-level = 3，通常无需额外调整。
+
+    针对性优化：
+
+        -C target-cpu=native 让 Rust 自动检测你的 CPU 并应用最佳优化（类似于 GCC 的 -march=native）。
+
+        也可以手动指定架构，如 -C target-cpu=skylake（适用于你的 Intel i7-6700HQ）。
+
+    其他优化选项：
+
+        -C opt-level=3（默认已启用）
+
+        -C lto（链接时优化，可能提升性能但增加编译时间）
+
+如何在 Gentoo 中设置？
+
+在 /etc/portage/make.conf 中添加：
+RUSTFLAGS="-C target-cpu=native"
+这样所有基于 Rust 的软件包（如 emerge 安装的）都会针对你的 CPU 优化编译。
+
+    一般用户：使用 target-cpu=native 即可。
+
+    高级用户：可结合 lto 或特定指令集（如 -C target-feature=+avx2）进一步优化。
+
+    注意：过度优化可能导致二进制文件无法在其他机器上运行（如需通用性，可改用 x86_64-v2 或 x86_64-v3）。
+
+###########################################################################
+###########################################################################
+特别注意:
+在修改RUSTFLAGS的时候采用:
+RUSTFLAGS="${RUSTFLAGS} -C target-cpu=native"
+这会保留原来的设置,不覆盖.如果采用以下形式就会覆盖:
+RUSTFLAGS="-C target-cpu=native"
+############################################################################
+###########################################################################

@@ -1,0 +1,137 @@
+###########################################################
+gentoo安装
+###########################################################
+中文安装手册:
+https://wiki.gentoo.org/wiki/Handbook:X86/Installation/Stage/zh-cn
+###########################################################
+介绍:
+gentoo是一个高度自己配置的系统,包括内核都可以直接编译安装
+包也是编译安装的
+包管理器:portage
+##########################################################
+安装前准备:
+
+安装系统的bootmedia介质:
+##########################################################
+用来启动boot,进入下一阶段,安装stage作准备,不是必须的;
+如果有现成的linux系统可以在现成的linux下进入下一阶段
+
+Minimal Installation CD 
+QCOW2 disk (no root pw) no multilib | systemd 
+LiveGUI USB Image
+
+##########################################################
+stage3包:
+openrc ####gentoo原始的
+systemd   ####现代的
+desktop profile | openrc   ###带桌面的openrc
+desktop frofile | systemd  ###带桌面的systemd
+########################################################
+下载地址:
+https://www.gentoo.org/downloads/
+中国镜像下载地址:
+https://www.gentoo.org/downloads/mirrors/#CN
+
+####################################################################
+通过其他linux系统进入安装gentoo:
+假设分区有: / /efi swap  分区,分别是:sda11(efi),sda12(swap),sda13(/)
+1 保证其他linux系统进入,可以使用网络等正常
+2 创建加载文件并挂载: /mnt/gentoo /mnt/gento/efi
+ mkdir /mnt/gentoo
+ mount /dev/sda13 /mnt/gentoo
+ mkdir /mnt/gentoo/efi
+ mount /dev/sda11 /mnt/gento/efi
+ swapon /dev/sda12 
+
+3 进入gentoo,复制stage3文件到这个目录下,解压缩 
+##假设我使用的是openrc
+cd /mnt/gento
+tar xpvf stage3-*.tar.xz --xattrs-include='*.*' --numeric-owner 
+#############
+参数解释:
+    x extract（提取），指示 tar 提取存档的内容。
+    p preserve（保留），保留权限。
+    V verbose（详细），提供详细输出。
+    f file（文件），为 tar 提供输入存档的名称。
+    --xattrs-include='*.*' 在存档中存储的所有命名空间中保留扩展属性。
+    --numeric-owner 确保从 tarball 中提取的文件的用户和组 ID 与 Gentoo
+ 的发布工程团队的预期相同（即使冒险的用户在安装过程中没有使用官方的 Gentoo live 环境）。
+###############
+
+4 配置编译选项:
+#####
+因为gentoo是编译系统的,所以一切都从编译开始,安装的stage3包里面有基本的编译工具
+所以需要设置编译参数
+nano /mnt/gentoo/etc/portage/make.conf
+修改里面的配置如下:
+COMMON_FLAGS="-O2 -march=x86_64 -pipe -fPIC"
+#########
+-O2
+优化级别：启用大多数安全的优化，提高代码执行速度，同时保持代码稳定性（比 -O1 激进，但比 -O3 保守
+适用场景：推荐大多数情况下使用，平衡性能和编译时间
+
+-march=x86-64
+目标架构：指定编译器生成针对 x86-64（AMD64/Intel 64） CPU 的代码
+优化影响：
+    使用 64 位指令集（如 movq, xmm 寄存器等)
+    避免兼容 32 位（i686）的旧指令
+ 
+-march=native
+自动检测当前 CPU 的最佳优化，但编译后的二进制可能无法在其他机器上运行）
+
+-mtune=generic
+(优化通用 x86-64 CPU，兼容性更好）
+
+-pipe
+编译加速：在编译过程中使用内存管道（而非临时文件），减少 I/O 开销，加快编译速度
+副作用：可能增加内存使用量，但在现代系统上影响不大
+
+-fPIC（Position Independent Code）
+作用：生成位置无关代码，适用于动态链接库（.so 文件）
+适用场景：
+    编译共享库（*.so）时必须使用
+    某些情况下（如 Gentoo 的 PIC/PIE 安全策略）推荐全局启用
+替代/补充选项：
+-fPIE（Position Independent Executable，适用于可执行文件）。
+-fpic（类似 -fPIC，但对某些架构有更小的偏移限制）
+
+示例:
+# 通用优化（兼容大多数 x86-64 CPU）
+COMMON_FLAGS="-O2 -march=x86-64 -pipe -fPIC"
+
+# 极致性能优化（仅限本地运行，不可移植）
+COMMON_FLAGS="-O3 -march=native -pipe -fPIC"
+
+# 安全强化选项（推荐用于生产环境）
+COMMON_FLAGS="-O2 -march=x86-64 -pipe -fPIC -fstack-protector-strong -D_FORTIFY_SOURCE=2"
+
+注意事项:
+-march=x86-64 vs -march=native
+    x86-64 保证兼容性，适合分发二进制文件。
+    native 针对当前 CPU 优化（如 AVX、AVX2），但编译的二进制可能无法在其他机器上运行。
+-fPIC 是否必须？
+    必须：编译共享库时。
+    推荐：在启用 PIE（安全增强）的系统上全局使用
+安全增强选项（可选但推荐）：
+-fstack-protector-strong   # 栈溢出保护
+-D_FORTIFY_SOURCE=2        # 运行时缓冲区溢出检查
+
+提示
+所有可能的变量的注释列表可以在 /mnt/gentoo/usr/share/portage/config/make.conf.example中找到。额外的关于 make.conf 文档可以运行 man 5 make.conf 查找。
+
+要成功安装 Gentoo，只需设置下面提到的变量。
+可以参考网站去理解参数
+https://wiki.gentoo.org/wiki/GCC_optimization/zh-cn
+https://gcc.gnu.org/onlinedocs/
+
+重要提示:
+虽然 USE 可能会有多行,但是在 CFLAGS 中有很多行将会在程序中导致错误例如 cmake. 请确保 CFLAGS 声明在一行上, 并且添加一些尽可能少的空格以避免问题. 查阅 bug #500034 示例.
+
+误区
+
+虽然启用各种CFLAGS的编译器优化可以有效地生成更小和/或更快的二进制文件，但它们也可能损害代码的功能、扩大代码大小、减慢代码执行时间，或者导致构建失败。当处理CFLAGS时，性能回报递减的点会很快达到。所以请不要随意设置。
+
+请记住, CFLAGS 全局变量设置于 /etc/portage/make.conf 将会被应用于系统上的每一个包 所以管理员通常只用设置为广泛适用的选项. 各个包在ebuild或构建系统本身中进一步修改这些选项，以生成调用编译器时使用的最后一组标志。 
+########
+
+

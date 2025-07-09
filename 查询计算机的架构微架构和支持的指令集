@@ -1,0 +1,55 @@
+1 确定基本架构:
+uname -a
+    输出示例：
+        x86_64 → 标准 64 位 x86 架构（AMD64/Intel 64）。
+        aarch64 → ARM 64 位架构。
+        i686 → 32 位 x86 架构。
+注意：uname -m 只能识别基础架构，无法区分 x86_64-v1/v2/v3/v4 等微架构级别
+
+2. 检查 CPU 微架构级别（x86_64-v1/v2/v3/v4）
+方法 1：使用 lscpu
+lscpu | grep -i "model name"
+输出示例：
+Model name:            Intel(R) Core(TM) i7-6700HQ CPU @ 2.60GHz
+根据 CPU 型号，对照 Intel/AMD 的微架构列表 判断：
+    x86_64-v1：最基础的 64 位支持（2003 年后的大部分 CPU）。
+    x86_64-v2：包含 SSE4.2、POPCNT 等指令（2010 年后的 CPU，如 Intel Nehalem+、AMD Bulldozer+）。
+    x86_64-v3：包含 AVX2、BMI 等指令（2015 年后的 CPU，如 Intel Haswell+、AMD Excavator+）。
+    x86_64-v4：包含 AVX-512 等指令（少数高端 CPU）。
+
+方法 2：使用 gcc 检测:
+gcc -march=native -Q --help=target | grep march
+输出示例：
+-march=                               skylake
+根据输出的微架构名称（如 skylake、zen2）判断对应的级别。
+skylake代表是 X86_64-v3微架构
+
+
+3. 查询 CPU 支持的指令集:
+运行以下命令查看 CPU 支持的指令集（关键指令对应微架构级别）：
+cat /proc/cpuinfo | grep -i "flags" | head -n 1
+    关键指令集与微架构的对应关系：
+        x86_64-v2：sse4_2、popcnt。
+        x86_64-v3：avx2、bmi1、bmi2。
+        x86_64-v4：avx512f、avx512vl。
+
+4 使用专用工具（如 cpuid）
+安装 cpuid 工具：
+# Debian/Ubuntu
+sudo apt install cpuid
+
+# Arch Linux
+sudo pacman -S cpuid
+
+# Gentoo
+sudo emerge app-admin/cpuid
+
+运行检测：
+cpuid | grep -i "feature"
+
+#######################################################
+为什么需要区分微架构级别？
+
+    Gentoo 优化：在 make.conf 中设置 -march=native 或特定级别（如 x86_64-v2）以提升性能。
+
+    软件兼容性：某些预编译包（如 Flatpak）会要求最低微架构级别。

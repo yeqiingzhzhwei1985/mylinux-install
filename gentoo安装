@@ -134,4 +134,337 @@ https://gcc.gnu.org/onlinedocs/
 请记住, CFLAGS 全局变量设置于 /etc/portage/make.conf 将会被应用于系统上的每一个包 所以管理员通常只用设置为广泛适用的选项. 各个包在ebuild或构建系统本身中进一步修改这些选项，以生成调用编译器时使用的最后一组标志。 
 ########
 
+#########################
+设置CPU_FLAGS_*
+参考文档:
+https://wiki.gentoo.org/wiki/CPU_FLAGS_*/zh-cn
+设置CPU_FLAGS*是为了更好的使用软件开发者自己编写的适合特定cpu的代码,对使用cpu更有效果
+CFLAGS则是告诉编译器按参数编译,不一定成功或者更有效果
+########################
+#设置RUSTFLAGS标签
+vim /mnt/gentoo/etc/portage/make.conf
+'''
+RUSTFLAGS="${RUSTFLAGS} -C target-cpu=native"
+'''
+########################
 
+#######################
+#设置MAKEOPTS参数
+如果合理的设置这个参数,可以合理的使用计算机的cpu加快编译的速度,这个参数的设置按照内和数目确定
+内核数目比如是 4 ,内存按每个内核2GB计算,取两者的最小数目
+比如我的是4内核,16GB,就设置为4
+/etc/portage/make.conf声明 MAKEOPTS 示例
+# 如果未定义，Portage 的默认行为是：
+# - 将 MAKEOPTS jobs 值设置为与 'nproc' 返回的相同线程数
+# - 将 MAKEOPTS load-average 值设置为略高于 'nproc' 返回的线程数，因为它是一个阻尼值
+# 请根据系统需要替换 '4' （使用系统线程数或GB记内存除以二的最小值），或者不设置。
+MAKEOPTS="-j4 -l5"
+###################################
+
+5 复制DNS信息
+cp --dereference /etc/resolv.conf /mnt/gentoo/etc/
+
+6 挂载必要的文件系统
+mount --types proc /proc /mnt/gentoo/proc
+mount --rbind /sys /mnt/gentoo/sys
+mount --make-rslave /mnt/gentoo/sys
+mount --rbind /dev /mnt/gentoo/dev
+mount --make-rslave /mnt/gentoo/dev
+mount --bind /run /mnt/gentoo/run
+mount --make-slave /mnt/gentoo/run 
+
+ 提示
+如果使用官方Gentoo install镜像，这一步可以被简化为 arch-chroot /mnt/gentoo.
+稍等片刻，Linux 的根目录将变更到新的位置。
+
+需要提供的文件系统是：
+
+    /proc/ 是一个伪文件系统，虽然它看起来像是常规文件，但是却是由 Linux 内核生成
+    /sys/ 是一个伪文件系统，它类似被取代的 /proc/，但是比 /proc/ 更结构化
+    /dev/ 是一个包含全部设备文件的常规文件系统，一部分由Linux设备管理器（通常是udev）管理
+    /run/ 是一个临时文件系统，用于运行时生成的文件，例如 PID 文件和锁
+
+/proc/位置将要挂载到/mnt/gentoo/proc/，而其它的都是绑定挂载。字面上的意思是，例如/mnt/gentoo/sys/事实上就是/sys/（它只是同一个文件系统的第二个条目点），而/mnt/gentoo/proc/是（可以说是）文件系统的一个新的挂载。 
+
+--make-rslave操作是稍后安装systemd支持时所需要的。
+
+ 警告
+当使用非Gentoo安装媒介时，这时可能还不算完。一些发行版将/dev/shm符号链接到/run/shm/，在chroot后将变得不可用。为了让/dev/shm/是一个正常挂载的tmpfs，可以这样修复：
+test -L /dev/shm && rm /dev/shm && mkdir /dev/shm
+mount --types tmpfs --options nosuid,nodev,noexec shm /dev/shm 
+同时确保设置了权限为1777： 
+chmod 1777 /dev/shm /run/shm
+
+亲自测试:Almalinux不需要将/dev/shm符号连接到/run/shm
+
+7  进入新环境
+现在所有的分区已经初始化，并且基础环境已经安装，是时候进入到新的安装环境了。这意思着会话将把根目录（能访问到最顶层的位置）从当前的安装环境（安装CD或其他安装媒介）变为安装系统（叫做初始化分区）。因此叫作 change root 或 chroot。
+
+完成chroot有三个步骤：
+
+    如果可以的话，使用 chroot 或 arch-chroot 将根目录的位置从 /（在安装媒介里）更改成 /mnt/gentoo/ （在分区里）
+    使用 source 命令将一些设置（那些在 /etc/profile 中的）重新载入到内存中
+    更改主提示符来帮助我们记住当前会话在一个 chroot 环境里面。
+
+chroot /mnt/gentoo /bin/bash
+source /etc/profile
+export PS1="(chroot) ${PS1}"
+
+从现在开始，所有的动作将立即在新 Gentoo Linux 环境里生效。 
+ 提示
+如果安装Gentoo时在这一步之后的任何地方中断，那么“应该”可以从这一步“继续”安装。不必再重新给磁盘分区！只需要挂载 root 分区 并运行上述步骤，然后通过复制 DNS 信息重新进入工作环境。 这也对修复引导程序问题很有用。更多的信息可以在 chroot 文章中找到。
+
+
+为引导加载程序做准备
+现在已进入新环境，需要为新环境配置引导加载程序做准备。在安装引导加载程序时，确保正确分区已挂载至关重要。
+
+UEFI 系统
+对于UEFI系统，/dev/sda11已格式化为FAT32文件系统，将作为EFI系统分区(ESP)使用。创建新的/efi目录（如尚未创建），然后将ESP挂载至该目录：
+
+8 配置 Portage
+从网站安装 Gentoo ebuild 数据库快照
+接下来，是安装 Gentoo ebuild 数据库。这个快照包含一组文件，包括通知 Portage 中有关可用软件的标题（用于安装），系统管理员可以选择哪些配置文件，软件包或 profile 特定新闻 (news) 项目等。
+建议那些使用限制性防火墙的用户使用 emerge-webrsync 命令（它使用 HTTP / FTP 协议下载快照）节省网络带宽。 没有网络或带宽限制的读者可以愉快地跳到下一节。
+这将从Gentoo的一个镜像中获取最新的快照（每天发布）并将其安装到系统上： 
+emerge-webrsync
+
+ 附注
+在这个操作中，emerge-webrsync可能会报找不到 /var/db/repos/gentoo/ 位置。这是预期内的并且不用担心——这个工具将会创建这个位置。
+从现在开始，Portage 可能会提示建议运行某些更新。这是因为在安装了一个新的repository 快照后，Portage 发现了 stage 文件中已经安装的某些软件包有更新的版本。现在可以安全的忽略包的更新；可以延迟到 Gentoo 安装完成之后更新。 
+
+可选：选择镜像站点
+为了能更快的下载源代码，推荐选择一个访问快、地理位置接近的镜像。Portage 将会在make.conf文件中查找GENTOO_MIRRORS变量，并使用其中所列的镜像。可以通过浏览 Gentoo 镜像列表搜索一个（或一组）最接近系统物理位置（往往那是最快的）的镜像。
+镜像选择工具 mirrorselect 提供一个美观的文字界面（TUI）以便快速查询和选择合适的镜像源。使用时，导航到要选择的镜像源，按下Spacebar空格键以选择一个或多个镜像源。 
+emerge --ask --verbose --oneshot app-portage/mirrorselect
+mirrorselect -i -o >> /etc/portage/make.conf
+
+除此之外，可在这里找到一份可用镜像源列表。 
+https://www.gentoo.org/downloads/mirrors/
+
+可选：更新Portage ebuild 数据库
+Gentoo 数据库可以更新到最新版本。前面的emerge-webrsync命令将安装一个最近的快照（通常是24小时以内），所以这一步是可选的。
+假设需要最新更新的软件包（1小时以内），可以使用emerge --sync。这个命令将使用rsync协议来更新 Gentoo ebuild 数据库（之前通过emerge-webrsync获得的）到最新状态。
+emerge --sync
+在慢速的终端上，比如一些framebuffer或者串口控制台，建议使用--quiet选项来加速这个进程： 
+emerge --sync --quiet
+
+9 配置正确的配置文件
+提示
+桌面配置文件并非只是 桌面环境。也可能是小的窗口管理器，例如 i3 或 sway。
+配置文件是任何一个Gentoo系统的积木。它不仅指定USE、CFLAGS和其它重要变量的默认值，还会锁定系统的包版本范围。这些设定全是由Gentoo的Portage开发者们来维护。 
+运行 eselect 使用 profile模块，能看到当前系统正在使用什么配置文件： 
+eselect profile list
+
+####
+$eselect profile list
+Available profile symlink targets:
+  [1]   default/linux/amd64/17.1 (stable)
+  [2]   default/linux/amd64/17.1/selinux (exp)
+  [3]   default/linux/amd64/17.1/hardened (exp)
+  [4]   default/linux/amd64/17.1/hardened/selinux (exp)
+  [5]   default/linux/amd64/17.1/desktop (exp)
+  [6]   default/linux/amd64/17.1/desktop/gnome (exp)
+  [7]   default/linux/amd64/17.1/desktop/gnome/systemd/merged-usr (exp)
+  [8]   default/linux/amd64/17.1/desktop/plasma (exp)
+  [9]   default/linux/amd64/17.1/desktop/plasma/systemd/merged-usr (exp)
+  [10]  default/linux/amd64/17.1/desktop/systemd/merged-usr (exp)
+  [11]  default/linux/amd64/17.1/developer (exp)
+  [12]  default/linux/amd64/17.1/no-multilib (exp)
+  [13]  default/linux/amd64/17.1/no-multilib/hardened (exp)
+  [14]  default/linux/amd64/17.1/no-multilib/hardened/selinux (exp)
+  [15]  default/linux/amd64/17.1/no-multilib/systemd/merged-usr (exp)
+  [16]  default/linux/amd64/17.1/no-multilib/systemd/selinux/merged-usr (exp)
+  [17]  default/linux/amd64/17.1/systemd/merged-usr (stable)
+  [18]  default/linux/amd64/17.1/systemd/selinux/merged-usr (exp)
+  [19]  default/linux/amd64/17.1/clang (exp)
+  [20]  default/linux/amd64/17.1/systemd/clang/merged-usr (exp)
+  [21]  default/linux/amd64/23.0 (stable) *
+  [22]  default/linux/amd64/23.0/systemd (stable)
+  [23]  default/linux/amd64/23.0/desktop (stable)
+  [24]  default/linux/amd64/23.0/desktop/systemd (stable)
+  [25]  default/linux/amd64/23.0/desktop/gnome (stable)
+  [26]  default/linux/amd64/23.0/desktop/gnome/systemd (stable)
+  [27]  default/linux/amd64/23.0/desktop/plasma (stable)
+  [28]  default/linux/amd64/23.0/desktop/plasma/systemd (stable)
+  [29]  default/linux/amd64/23.0/no-multilib (stable)
+  [30]  default/linux/amd64/23.0/no-multilib/systemd (stable)
+  [31]  default/linux/amd64/23.0/no-multilib/hardened (stable)
+  [32]  default/linux/amd64/23.0/no-multilib/hardened/systemd (stable)
+  [33]  default/linux/amd64/23.0/no-multilib/hardened/selinux (stable)
+  [34]  default/linux/amd64/23.0/no-multilib/hardened/selinux/systemd (stable)
+  [35]  default/linux/amd64/23.0/no-multilib/prefix (exp)
+  [36]  default/linux/amd64/23.0/no-multilib/prefix/kernel-2.6.32+ (exp)
+  [37]  default/linux/amd64/23.0/no-multilib/prefix/kernel-2.6.16+ (exp)
+  [38]  default/linux/amd64/23.0/no-multilib/prefix/kernel-3.2+ (exp)
+  [39]  default/linux/amd64/23.0/llvm (exp)
+  [40]  default/linux/amd64/23.0/llvm/systemd (exp)
+  [41]  default/linux/amd64/23.0/hardened (stable)
+  [42]  default/linux/amd64/23.0/hardened/systemd (stable)
+  [43]  default/linux/amd64/23.0/hardened/selinux (stable)
+  [44]  default/linux/amd64/23.0/hardened/selinux/systemd (stable)
+  [45]  default/linux/amd64/23.0/split-usr (stable)
+  [46]  default/linux/amd64/23.0/split-usr/desktop (stable)
+  [47]  default/linux/amd64/23.0/split-usr/desktop/gnome (stable)
+  [48]  default/linux/amd64/23.0/split-usr/desktop/plasma (stable)
+  [49]  default/linux/amd64/23.0/split-usr/no-multilib (stable)
+  [50]  default/linux/amd64/23.0/split-usr/no-multilib/selinux (stable)
+  [51]  default/linux/amd64/23.0/split-usr/no-multilib/hardened (stable)
+  [52]  default/linux/amd64/23.0/split-usr/no-multilib/hardened/selinux (stable)
+  [53]  default/linux/amd64/23.0/split-usr/no-multilib/prefix (exp)
+  [54]  default/linux/amd64/23.0/split-usr/no-multilib/prefix/kernel-2.6.32+ (exp)
+  [55]  default/linux/amd64/23.0/split-usr/no-multilib/prefix/kernel-2.6.16+ (exp)
+  [56]  default/linux/amd64/23.0/split-usr/no-multilib/prefix/kernel-3.2+ (exp)
+  [57]  default/linux/amd64/23.0/split-usr/llvm (exp)
+  [58]  default/linux/amd64/23.0/split-usr/hardened (stable)
+  [59]  default/linux/amd64/23.0/split-usr/hardened/selinux (stable)
+  [60]  default/linux/amd64/17.0/x32 (exp)
+  [61]  default/linux/amd64/17.0/x32/systemd/merged-usr (exp)
+  [62]  default/linux/amd64/23.0/x32 (dev)
+  [63]  default/linux/amd64/23.0/x32/systemd (exp)
+  [64]  default/linux/amd64/23.0/split-usr/x32 (exp)
+  [65]  default/linux/amd64/17.0/musl (exp)
+  [66]  default/linux/amd64/17.0/musl/clang (exp)
+  [67]  default/linux/amd64/17.0/musl/hardened (exp)
+  [68]  default/linux/amd64/17.0/musl/hardened/selinux (exp)
+  [69]  default/linux/amd64/23.0/musl (dev)
+  [70]  default/linux/amd64/23.0/musl/llvm (exp)
+  [71]  default/linux/amd64/23.0/musl/hardened (exp)
+  [72]  default/linux/amd64/23.0/musl/hardened/selinux (exp)
+  [73]  default/linux/amd64/23.0/split-usr/musl (dev)
+  [74]  default/linux/amd64/23.0/split-usr/musl/llvm (exp)
+  [75]  default/linux/amd64/23.0/split-usr/musl/hardened (exp)
+  [76]  default/linux/amd64/23.0/split-usr/musl/hardened/selinux (exp)
+
+这里可以看出现在默认是使用 21 也就是stage3 openrc版本
+可以修改为desktop版本,也就是23 
+eselect profile set 23
+附注
+命令的这个输出只是一个示例，并会随时间演变。
+一些架构还会有桌面的子配置文件。 
+警告
+升级 profile 不能掉以轻心
+选择初始 profile 时，使用与最初使用的 stage3 “相同的版本”（例如 23.0 ）。
+每个新的 profile 版本都通过新闻项目公布，新闻项目中包含了迁移说明。
+在切换到较新的 profile 之前，请按照说明操作。
+
+修改后清检查profile是不是正确:
+eselect profile show
+
+'''
+Current /etc/portage/make.profile symlink:
+  default/linux/amd64/23.0/desktop
+'''
+附注
+developer 子配置文件是专用于Gentoo Linux开发，也就是说不适用于普通用户。
+
+10 可选：添加二进制包源
+从2023年12月开始，Gentoo的发布工程团队提供了一个官方的二进制包源（可以简称为“binhost”）供一般社区用于检索和安装二进制包 （binpkg）
+工程团队网站:
+https://wiki.gentoo.org/wiki/Project:RelEng
+二进制包链接
+https://wiki.gentoo.org/wiki/Gentoo_Binary_Host_Quickstart
+添加二进制包源允许 Portage 安装加密签名的、编译的包。在许多情况下，添加二进制包主机将“大大”减少包安装的平均时间，并在较旧、较慢或低功耗的系统上运行 Gentoo 时增加很多好处。 
+
+存储库配置
+Gentoo 二进制宿主仓库（binhost）的配置文件存放于 Portage 的 /etc/portage/binrepos.conf/ 目录，其配置方式与 ebuild 软件源（repository）的设置逻辑相似。
+在配置二进制宿主时，需要特别注意以下两个核心要素：
+sync-uri 值中的架构和配置文件目标确实很重要，必须与计算机架构（本例为 x86）以及在"选择正确配置文件"章节中选定的系统配置文件保持一致。
+
+选择地理位置较近的快速镜像通常能缩短检索时间。您可参考"可选：选择镜像"章节中提到的 mirrorselect 工具，或者查阅在线镜像列表以获取可用的 URL 值。
+
+/etc/portage/binrepos.conf/gentoobinhost.conf    ####CDN-based binary package host example
+[gentoobinhost]
+priority = 9999
+sync-uri = https://distfiles.gentoo.org/releases/<arch>/binpackages/<profile>/x86-64/
+
+示例:
+[gentoobinhost]
+priority = 9999
+sync-uri = https://distfiles.gentoo.org/releases/amd64/binpackages/23.0/desktop/x86-64/
+
+安装二进制文件
+Portage 默认会从源代码编译软件包。可以通过以下方式指示其使用二进制包：
+1 在调用 emerge 命令时传递 --getbinpkg 选项。这种二进制包安装方法适用于仅安装特定二进制包的情况。
+2 通过 Portage 的 FEATURES 变量（在 /etc/portage/make.conf 文件中配置）更改系统默认设置。应用此配置更改后，Portage 会先向二进制包主机查询请求的软件包，当找不到结果时才回退到本地编译。
+例如，要使 Portage 始终安装可用的二进制包：
+ /etc/portage/make.conf   ###将Portage配置为默认使用二进制包
+# 将getbinpkg追加到FEATURES变量的值列表中
+FEATURES="${FEATURES} getbinpkg"
+# 要求签名验证
+FEATURES="${FEATURES} binpkg-request-signature"
+请同时运行 getuto 命令，以便 Portage 设置验证所需的密钥环：
+getuto
+
+11 配置 USE 变量
+USE是Gentoo为用户提供的最具威力的变量之一。很多程序通过它可以选择编译或者不编译某些可选的支持。例如，一些程序可以在编译时加入对 GTK+或是对Qt的支持。其它的程序可以在编译时加入或不加入对于SLL的支持。有些程序甚至可以在编译时加入对framebuffer的支持（svgalib）以取代X11（X服务器）
+大多数的发行版会使用尽可能多的支持特性编译它们的软件包，这既增加了软件的大小也减慢了启动时间，而这些还没有算上可能会涉及到的大量依赖性问题。Gentoo可以让你自己定义软件编译的选项，而这正是USE要做的事。
+在USE变量里你可以定义关键字，它被用来对应相应的编译选项。
+例如，ssl将会把SSL支持编译到程序中以支持它。
+-X会移除其对于X服务器的支持（注意前面的减号）。
+gnome gtk -kde -qt5 将会以支持GNOME（和GTK+）但不支持KDE（和Qt）的方式编译软件，使系统为GNOME做完全调整（如果架构支持）。
+默认的USE设置全放在了系统所使用的Gentoo配置文件的make.defaults文件中。Gentoo对它的配置文件们使用了一个（复杂的）继承系统，在这个阶段我们不去深入。最简单的检查当前活动的USE标记的办法是运行emerge --info并选择以USE开头的那一行：
+emerge --info | grep ^USE
+USE="X a52 aac acl acpi alsa amd64 bluetooth branding bzip2 cairo cdda cdr cet crypt cups dbus dri dts dvd dvdr elogind encode exif flac gdbm gif gpm gtk gui iconv icu ipv6 jpeg lcms libnotify libtirpc mad mng mp3 mp4 mpeg multilib ncurses nls ogg opengl openmp pam pango pcre pdf png policykit ppds qml qt5 qt6 readline sdl seccomp sound spell ssl startup-notification svg test-rust tiff truetype udev udisks unicode upower usb vorbis vulkan wayland wxwidgets x264 xattr xcb xft xml xv xvid zlib" ABI_X86="64" ADA_TARGET="gcc_14" APACHE2_MODULES="authn_core authz_core socache_shmcb unixd actions alias auth_basic authn_anon authn_dbm authn_file authz_dbm authz_groupfile authz_host authz_owner authz_user autoindex cache cgi cgid dav dav_fs dav_lock deflate dir env expires ext_filter file_cache filter headers include info log_config logio mime mime_magic negotiation rewrite setenvif speling status unique_id userdir usertrack vhost_alias" CALLIGRA_FEATURES="karbon sheets words" COLLECTD_PLUGINS="df interface irq load memory rrdtool swap syslog" CPU_FLAGS_X86="mmx mmxext sse sse2" ELIBC="glibc" GPSD_PROTOCOLS="ashtech aivdm earthmate evermore fv18 garmin garmintxt gpsclock greis isync itrax navcom oceanserver oncore rtcm104v2 rtcm104v3 sirf skytraq superstar2 tsip tripmate tnt ublox" GUILE_SINGLE_TARGET="3-0" GUILE_TARGETS="3-0" INPUT_DEVICES="libinput" KERNEL="linux" LCD_DEVICES="bayrad cfontz glk hd44780 lb216 lcdm001 mtxorb text" LUA_SINGLE_TARGET="lua5-1" LUA_TARGETS="lua5-1" OFFICE_IMPLEMENTATION="libreoffice" PHP_TARGETS="php8-3" POSTGRES_TARGETS="postgres17" PYTHON_SINGLE_TARGET="python3_13" PYTHON_TARGETS="python3_13" RUBY_TARGETS="ruby32 ruby33" VIDEO_CARDS="amdgpu fbdev intel nouveau radeon radeonsi vesa dummy" XTABLES_ADDONS="quota2 psd pknock lscan length2 ipv4options ipp2p iface geoip fuzzy condition tarpit sysrq proto logmark ipmark dhcpmac delude chaos account"
+
+可以在系统的 /var/db/repos/gentoo/profiles/use.desc 中找到可用的USE标记的完整描述。 
+less /var/db/repos/gentoo/profiles/use.desc
+
+作为示例，我们展示一个支持DVD、ALSA,以及CD录制的基于KDE系统的USE设置：
+nano /etc/portage/make.conf
+/etc/portage/make.conf为基于 KDE/Plasma 系统启用 DVD、ALSA 和 CD录制支持 flag
+USE="-gtk -gnome qt5 kde dvd alsa cdr"
+当在 /etc/portage/make.conf中定义一个 USE 值，会添加到系统 USE 标志中。USE 标志可以通过在列表内的值前面中添加 - 减号来全局移除。例如，禁用　X　图形化环境的支持，可以设置 -X： 
+/etc/portage/make.conf忽略默认USE标记
+USE="-X acl alsa"
+警告
+尽管可以设置 -*（这将禁用除 make.conf 中指定的值之外的所有 USE 值），但这样做很不推荐，也不理智。Ebuild 开发人员在 ebuild 中选择某些默认的 USE 标志值以防止冲突，增强安全性，避免错误，以及其他原因。禁用 所有 USE 标志将否定默认行为，并可能导致重大问题。
+
+12  CPU_FLAGS_*
+一些架构（包括 AMD64/X86、ARM、PPC）有称为 CPU_FLAGS_<ARCH> 的 USE_EXPAND 变量，请将 <ARCH> 替换为相应的系统架构名称。
+重要
+不要糊涂! AMD64 和 X86 系统有一些共同的架构，所以 AMD64 正确的变量名称是 CPU_FLAGS_X86。
+该变量用于构建编译特定的汇编代码或其他内置函数——通常是手写或其它的， 并且与要求编译器输出针对某个 CPU 功能的优化代码不同。（例如 -march=） 
+如果需要，用户除了配置他们的 COMMON_FLAGS ，还应该设置此变量。
+需要几个步骤来设置它： 
+emerge --ask --oneshot app-portage/cpuid2cpuflags
+如果有疑问，请手动检查输出： 
+cpuid2cpuflags
+然后复制输出到 package.use： 
+echo "*/* $(cpuid2cpuflags)" > /etc/portage/package.use/00cpu-flags
+
+13  VIDEO_CARDS
+以下是正确设置 VIDEO_CARDS 的 package.use 配置示例。请替换为要使用的驱动程序名称：
+/etc/portage/package.use/00video_cards
+下表列出了不同显卡类型及其对应的 VIDEO_CARDS 值，便于对比参考：
+Machine 	Discrete video card 	VIDEO_CARDS
+Intel x86 	None 	See Intel#Feature support
+x86/ARM 	Nvidia 	nvidia
+Any 	Nvidia except Maxwell, Pascal and Volta 	nouveau
+Any 	AMD since Sea Islands 	amdgpu radeonsi
+Any 	ATI and older AMD 	See radeon#Feature support
+Any 	Intel 	intel
+Raspberry Pi 	N/A 	vc4
+QEMU/KVM 	Any 	virgl
+WSL 	Any 	d3d12
+
+https://wiki.gentoo.org/wiki/Intel/zh-cn#Feature_support
+https://wiki.gentoo.org/wiki/Radeon#Feature_support
+
+各款GPU的详细配置说明可查阅以下专题文章：
+    AMDGPU  ### https://wiki.gentoo.org/wiki/AMDGPU/zh-cn
+    Intel   ### https://wiki.gentoo.org/wiki/Intel/zh-cn
+    Nouveau（开源驱动） ### https://wiki.gentoo.org/wiki/Nouveau
+    NVIDIA（专有驱动）  ### https://wiki.gentoo.org/wiki/NVIDIA/zh-cn
+
+14 可选：配置 ACCEPT_LICENSE 变量
+查看文档: https://wiki.gentoo.org/wiki/Handbook:X86/Installation/Base/zh-cn#Gentoo_ebuild_repository
+
+15 更新@world集合
+当系统应用了任何升级，或从 任何profile 构建了stage3 后，应用了变化的 use 标记时，下一步是必要的。 
+当前已选择与 stage 文件不同的 profile 目标。
+已为已安装的软件包设置了额外的 USE 标志。
+正在进行"快速安装 Gentoo"的读者可以安全地跳过 @world 集合更新，待系统重启进入新的 Gentoo 环境后再进行。
+而选择"慢速安装"的读者则可以让 Portage 立即执行针对软件包、profile 和/或 USE 标志变更的更新：
+emerge --ask --verbose --update --deep --newuse @world
+已配置二进制包镜像源的读者可添加 --getbinpkg（或简写 -g）参数，以从二进制镜像获取软件包而非本地编译：
+emerge --ask --verbose --update --deep --newuse --getbinpkg @world

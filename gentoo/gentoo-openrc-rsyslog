@@ -1,0 +1,31 @@
+###gentoo openrc 默认没有安装日子记录系统,需要手动配置
+emerge -av app-admin/rsyslog
+
+rc-server rsyslog start
+rc-update add rsyslog default
+
+日至路径:
+Openrc服务的日志通常记录在/var/log/messages或者/var/log/syslog
+
+手动创建日志文件
+编辑/etc/init.d/rc
+
+rc_start(){
+    echo "Starting servoce $RC_SVCNAME" >> /var/log/rc.log
+    ...
+}
+
+
+检查日志
+即使没有 /var/log/rc.log，OpenRC 的日志可能分散在以下文件中：
+# 查看系统日志
+cat /var/log/messages | grep -i openrc
+
+# 查看特定服务的日志（如 NetworkManager）
+cat /var/log/messages | grep NetworkManager
+
+使用专用工具监控启动日志
+# 实时查看 OpenRC 启动日志（需 root）
+openrc-logger -f /var/log/openrc.log
+
+
